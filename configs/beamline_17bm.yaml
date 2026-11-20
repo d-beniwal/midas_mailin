@@ -60,8 +60,8 @@ only_full_rings: true
 # Masking
 # ------------------------------------------------------------------------------
 # Optional bad-pixel mask (.tif/.tiff or .npy), same shape as the detector image.
-# 1/non-zero = bad pixel (excluded), 0 = good. null -> no mask. A mask flagging >10% of
-# pixels is rejected as 'probably an image'. NOTE: the beamline's BadPixel_*.tif files are
+# 1/non-zero = bad pixel (excluded), 0 = good. null -> no mask. A mask excluding >10% of
+# pixels triggers a WARNING (probably wrong, e.g. an image); the run continues. NOTE: the beamline's BadPixel_*.tif files are
 # detector IMAGES (median ~1e4 counts), NOT 0/1 masks -- do not point mask_file at them.
 mask_file: null
 

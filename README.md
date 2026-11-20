@@ -305,6 +305,8 @@ parameters. To re-verify against a GSAS-II install:
 | `1` | calibration failed (nothing integrated), or one or more integrations failed -- see the summary JSON |
 | `2` | bad inputs or config (missing file, unknown config key, duplicate stems); nothing was run |
 
+Non-fatal problems (e.g. a mask excluding >10% of pixels) are printed as `WARNING:` on stderr and listed under `warnings` in the summary JSON; they do not change the exit code.
+
 ### Configuration
 
 `configs/beamline_17bm.yaml` is fully commented. Every key is optional, but an

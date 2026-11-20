@@ -41,7 +41,7 @@ from . import lib
 
 CALIB_SUFFIX = '_calib'
 INTEG_SUFFIX = '_integ'
-MAX_MASK_BAD_FRACTION = 0.10   # sanity limit: a real bad-pixel mask flags far fewer pixels
+MAX_MASK_BAD_FRACTION = 0.10   # above this, warn that the mask is probably wrong
 
 
 def _calibrate(calib_tif: Path, outdir: Path, cfg, overwrite: bool, seed_kwargs=None):
@@ -146,6 +146,7 @@ def main(argv=None) -> int:
 
     # ---- validate everything up front: exit 2 before doing any work ----------
     errors = []
+    warnings = []   # non-fatal problems: printed, and recorded in the run summary
     try:
         cfg = load_config(args.config)
     except Exception as exc:
@@ -173,11 +174,13 @@ def main(argv=None) -> int:
             try:
                 bad_frac = float(np.mean(lib.load_mask_file(cfg.mask_file) != 0))
                 if bad_frac > MAX_MASK_BAD_FRACTION:
-                    errors.append(
-                        f'mask_file {cfg.mask_file} flags {bad_frac:.1%} of pixels as bad (limit '
-                        f'{MAX_MASK_BAD_FRACTION:.0%}). A mask must be 0 = good / non-zero = bad; this '
-                        f'looks like a detector IMAGE, not a mask (e.g. the BadPixel_*.tif files are '
-                        f'images -- their sibling .json holds the bad-pixel list).')
+                    # warn, don't stop: an unusually large mask is suspicious but may be intentional
+                    warnings.append(
+                        f'mask_file {cfg.mask_file} excludes {bad_frac:.1%} of the detector pixels '
+                        f'(> {MAX_MASK_BAD_FRACTION:.0%}): the mask is probably wrong. A mask must be '
+                        f'0 = good / non-zero = bad; this may be a detector IMAGE rather than a mask '
+                        f'(e.g. the BadPixel_*.tif files are images -- their sibling .json holds the '
+                        f'bad-pixel list). Continuing anyway.')
             except Exception as exc:
                 errors.append(f'cannot read mask_file {cfg.mask_file}: {exc}')
 
@@ -195,6 +198,8 @@ def main(argv=None) -> int:
     for stem, files in stems.items():
         if len(files) > 1:
             errors.append(f'duplicate file stem {stem!r} (outputs would collide): {files}')
+    for w in warnings:
+        print(f'WARNING: {w}', file=sys.stderr)
     if errors:
         for e in errors:
             print(f'error: {e}', file=sys.stderr)
@@ -206,7 +211,7 @@ def main(argv=None) -> int:
     summary = dict(
         midas_mailin_version=__version__, started=time.strftime('%Y-%m-%dT%H:%M:%S'),
         config_file=str(args.config) if args.config else None, config=dump_config(cfg),
-        overwrite=overwrite, outdir=str(outdir), status='running',
+        overwrite=overwrite, outdir=str(outdir), status='running', warnings=warnings,
         calibration=dict(file=str(calib), status='pending', outputs={}),
         integrations=[],
     )

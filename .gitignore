@@ -15,3 +15,9 @@ dist/
 
 # Local test runs (outputs of pipeline checks)
 test_runs/
+
+# Agent instructions + project context (kept local per project convention)
+AGENTS.md
+CLAUDE.md
+.context/
+.claude/
