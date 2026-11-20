@@ -41,6 +41,7 @@ from . import lib
 
 CALIB_SUFFIX = '_calib'
 INTEG_SUFFIX = '_integ'
+MAX_MASK_BAD_FRACTION = 0.10   # sanity limit: a real bad-pixel mask flags far fewer pixels
 
 
 def _calibrate(calib_tif: Path, outdir: Path, cfg, overwrite: bool, seed_kwargs=None):
@@ -165,8 +166,20 @@ def main(argv=None) -> int:
     for f in integ:
         if not f.is_file():
             errors.append(f'integration file not found: {f}')
-    if cfg.mask_file is not None and not Path(cfg.mask_file).is_file():
-        errors.append(f'mask_file not found: {cfg.mask_file}')
+    if cfg.mask_file is not None:
+        if not Path(cfg.mask_file).is_file():
+            errors.append(f'mask_file not found: {cfg.mask_file}')
+        else:
+            try:
+                bad_frac = float(np.mean(lib.load_mask_file(cfg.mask_file) != 0))
+                if bad_frac > MAX_MASK_BAD_FRACTION:
+                    errors.append(
+                        f'mask_file {cfg.mask_file} flags {bad_frac:.1%} of pixels as bad (limit '
+                        f'{MAX_MASK_BAD_FRACTION:.0%}). A mask must be 0 = good / non-zero = bad; this '
+                        f'looks like a detector IMAGE, not a mask (e.g. the BadPixel_*.tif files are '
+                        f'images -- their sibling .json holds the bad-pixel list).')
+            except Exception as exc:
+                errors.append(f'cannot read mask_file {cfg.mask_file}: {exc}')
 
     # integrate list = calibrant first, then the rest; dedupe by resolved path
     seen, to_integrate = set(), []
