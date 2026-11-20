@@ -34,7 +34,7 @@ location used below: `C:\Users\17bmuser\midas_mailin` (Windows) or
 `~/midas_mailin` (Linux/macOS).
 
 ```bash
-git clone <URL-of-the-midas_mailin-repository> C:\Users\17bmuser\midas_mailin
+git clone https://github.com/d-beniwal/midas_mailin.git C:\Users\17bmuser\midas_mailin
 # or, with no git access: copy the whole folder over (it must contain
 # pyproject.toml, environment.yml, the midas_mailin/ folder and configs/)
 ```

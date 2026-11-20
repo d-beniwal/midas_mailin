@@ -12,3 +12,6 @@ __pycache__/
 build/
 dist/
 .DS_Store
+
+# Local test runs (outputs of pipeline checks)
+test_runs/
