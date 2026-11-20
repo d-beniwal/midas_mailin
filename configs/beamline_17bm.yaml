@@ -1,0 +1,112 @@
+# midas_mailin configuration for APS beamline 17-BM (mail-in XRD).
+#
+# Pass with:  python -m midas_mailin ... --config configs/beamline_17bm.yaml
+# Every key is optional (built-in defaults apply), but unknown keys are an
+# error, so typos are never silently ignored. A relative `mask_file` path is
+# resolved relative to THIS file.
+
+# ------------------------------------------------------------------------------
+# Calibrant
+# ------------------------------------------------------------------------------
+# Either a registered name (a key of midas_calibrate_v2.CALIBRANTS, e.g. LaB6,
+# CeO2, Si, Al2O3) or a custom lattice for an unregistered calibrant, e.g.
+# cubic Si (a=5.4310 A, Fd-3m):
+#   calibrant: {sg: 227, a: 5.4310, b: 5.4310, c: 5.4310, alpha: 90, beta: 90, gamma: 90}
+# 17BM mail-in calibration frames are always LaB6 (NIST SRM 660c, a=4.1569 A,
+# space group 221). The .metadata sidecar's own calibrantName field must NOT be
+# trusted instead.
+calibrant: LaB6
+
+# Detector pixel pitch (um), used only if a .metadata sidecar omits it.
+default_px_um: 150.0
+
+# calibrate() tuning. BC/Lsd are ALWAYS auto-seeded from the image itself --
+# these only affect the refinement stage, never the seed.
+# refine_distortion: how many of the 15 harmonic distortion coefficients are
+# refined. One of: none, radial, radial+1fold, radial+2fold, radial+3fold,
+# radial+4fold, full, or an explicit list of coefficient names (e.g.
+# [iso_R2, a2, phi2]). 'radial' = isotropic radial terms only (iso_R2/4/6);
+# the N-fold azimuthal terms need cleaner ring coverage to be constrained.
+calibrate_kwargs:
+  n_iter: 4
+  lm_max_iter: 200
+  refine_tilts: true
+  refine_distortion: radial
+  build_residual_corr: false
+  max_2theta_deg: 28.0
+  verbose: true
+
+# ------------------------------------------------------------------------------
+# Integration binning
+# ------------------------------------------------------------------------------
+r_bin_size_px: 0.25
+eta_bin_size_deg: 5.0
+r_min_px: 10.0
+r_min_2theta_deg: 1     # if set (deg), overrides r_min_px (converted via the calibration's Lsd/pixel size)
+r_max_px: null          # null -> auto: beam centre to farthest corner (further capped by only_full_rings)
+eta_min_deg: -180.0
+eta_max_deg: 180.0
+binning_method: subpixel   # hard | soft | subpixel | polygon
+subpixel_k: 4              # only used when binning_method == subpixel
+polygon_n_jobs: -1         # only used when binning_method == polygon
+error_model: poisson       # poisson | azimuthal | hybrid (hard/subpixel/polygon only)
+pixel_weighted_averaging: true   # weight each eta slice by its pixel/area coverage when collapsing to 1D
+
+# 1 -> cap r_max to the radius where rings are still fully on-detector (nearest
+# detector edge from the beam centre); 0 -> use the full configured/auto range.
+only_full_rings: true
+
+# ------------------------------------------------------------------------------
+# Masking
+# ------------------------------------------------------------------------------
+# Optional bad-pixel mask (.tif/.tiff or .npy), same shape as the detector image.
+# 1/non-zero = bad pixel (excluded), 0 = good. null -> no mask.
+mask_file: null
+
+# Azimuthal (eta) exclusion wedges, e.g. a beamstop-arm shadow or tile seam.
+# Punches holes out of the active [eta_min_deg, eta_max_deg] window; internally
+# OR'd with mask_file and treated exactly like bad pixels.
+#
+# eta convention (verified numerically against midas_calibrate_v2 with zero
+# tilts; the same eta as eta_min/max_deg, eta_bin_size_deg,
+# polarization_plane_eta_deg and the 2d_csv cake axis):
+#   eta =    0 -> straight DOWN from the beam centre (increasing image row)
+#   eta =  +90 -> RIGHT (increasing column)
+#   eta = +/-180 -> UP
+#   eta =  -90 -> LEFT
+# eta increases counterclockwise on screen. NOT the same as
+# midas_integrate_v2.dac.build_gasket_mask's eta (mirror image: 90 - eta_here).
+#
+# Each wedge is [eta_min, eta_max] or [eta_min, eta_max, symmetry], symmetry =
+#   single (default) | two_fold (also the 180-deg-opposite wedge) |
+#   four_fold (also the +/-90-deg wedges)
+# Examples:
+#   eta_exclude_deg: [[85, 95]]                  # +/-5 deg about +90 (right) only
+#   eta_exclude_deg: [[85, 95, two_fold]]        # right AND left
+#   eta_exclude_deg: [[85, 95], [-5, 5]]         # two independent wedges
+eta_exclude_deg:
+  - [75, 105]
+
+# ------------------------------------------------------------------------------
+# Corrections
+# ------------------------------------------------------------------------------
+# corrected = raw / (1 - PF * sin^2(2theta) * cos^2(eta - plane))
+polarization_correction: true
+polarization_fraction: 0.99
+polarization_plane_eta_deg: 0.0
+
+# true: divide the final 1D intensity, sigma and 2D cake by the square of the
+# calibrated detector distance in METRES (Lsd/1e6, Lsd in um).
+divide_by_distance_sq: false
+
+# ------------------------------------------------------------------------------
+# Outputs / run behaviour
+# ------------------------------------------------------------------------------
+# Any subset of: csv, xye, fxye, dat, esg, 2d_csv
+integration_output_formats: [csv, xye, fxye, dat, esg, 2d_csv]
+
+# Redo outputs that already exist (the CLI's --overwrite/--no-overwrite wins).
+overwrite: true
+
+# Display only: how far out (2theta, deg) the calibration overlay draws rings.
+ring_two_theta_max_deg: 25.0

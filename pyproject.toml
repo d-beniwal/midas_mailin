@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "midas_mailin"
+version = "0.1.0"
+description = "MIDAS calibration + integration for mail-in XRD frames, run as an isolated subprocess workflow"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "contourpy",
+    "tifffile",
+    "scikit-image",
+    "torch",
+    "h5py",
+    "hdf5plugin",
+    "midas-suite==0.12.0",
+    "pyyaml",
+]
+
+[project.scripts]
+midas-mailin = "midas_mailin.pipeline:main"
+
+[tool.setuptools]
+packages = ["midas_mailin"]

@@ -1,0 +1,14 @@
+# Test data (raw .tif frames + .metadata sidecars; huge, lives locally only)
+test_data/
+
+# Run outputs
+*_run_summary.json
+*_midas_mailin.log
+
+# Python / packaging
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.DS_Store
